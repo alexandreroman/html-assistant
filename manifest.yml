@@ -1,0 +1,19 @@
+---
+version: 1
+applications:
+- name: html-assistant
+  memory: 1G
+  path: target/html-assistant-0.0.1-SNAPSHOT.jar
+  random-route: true
+  health-check-type: http
+  health-check-http-endpoint: /livez
+  readiness-health-check-http-endpoint: /readyz
+  env:
+    JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
+    SPRING_AI_MISTRALAI_API-KEY: ((MISTRALAI_API_KEY))
+    SPRING_AI_OPENAI_CHAT_API-KEY: ((GROQ_API_KEY))
+    SPRING_PROFILES_ACTIVE: ((SPRING_PROFILE))
+  buildpacks:
+  - java_buildpack_offline
+  services:
+  - redis

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="light">
+<head>
+  <title>HTML Assistant</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.css}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Pacifico&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" type="text/css" th:href="@{/webjars/github-fork-ribbon-css/gh-fork-ribbon.css}"/>
+  <link rel="stylesheet" type="text/css" th:href="@{/css/styles.css}"/>
+</head>
+<body class="d-flex flex-column h-100">
+
+<main id="content" class="flex-shrink-0 container" style="max-width: 900px">
+  <div id="spinner" th:if="${contentId}" class="fa-3x"
+       style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <i class="fas fa-spinner fa-pulse p-0 m-0" style="width: 32px; height: 32px;"></i>
+  </div>
+
+  <iframe th:if="${contentId}" class="w-100 h-100" th:src="${'/content/site-' + contentId}"
+          onload="document.getElementById('spinner').style.display = 'none'"
+  ></iframe>
+  <iframe th:unless="${contentId}" class="w-100 h-100" th:src="@{/starter.html}"></iframe>
+</main>
+
+<footer class="sticky-bottom mx-auto px-3 pb-4 pt-2" style="max-width: 900px">
+  <div id="prompt-bar" class="bg-white border border-dark-subtle shadow rounded-5 pt-2 px-4">
+    <form class="input-group" method="post" th:action="@{'/assistant'}" th:object="${assistantForm}">
+      <input type="hidden" th:field="*{previousContentId}"/>
+      <input type="text" th:field="*{prompt}"
+             class="form-control border-0 ps-0 bg-white" autocomplete="off"
+             placeholder="Let's create a website..." autofocus/>
+    </form>
+    <div class="container p-0 mb-2 ms-1">
+      <div class="row align-items-center" style="font-size: 80%">
+        <div class="col-auto p-0">
+          <a th:href="@{/assistant}" class="btn btn-light bg-transparent p-2">
+            <i style="width: 14px; height: 14px" class="fa-solid fa-rotate-left"></i>
+          </a>
+        </div>
+        <div class="col-auto p-0 ms-1">
+          <button onclick="togglePromptBarVisibility()" class="btn btn-light bg-transparent p-2 m-0">
+            <i style="width: 14px; height: 14px" class="fa-solid fa-eye-slash"></i>
+          </button>
+        </div>
+        <div class="col text-end">
+          <div id="powered-by" class="text-end text-secondary mt-1 align-middle">
+            <img width="103" height="24"
+                 alt="Spring AI"
+                 th:src="@{/images/spring-ai-logo.png}"/>
+            with
+            <span th:text="${model}"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <a class="github-fork-ribbon fixed" href="https://github.com/alexandreroman/html-assistant"
+     data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
+</footer>
+
+<script defer th:src="@{/webjars/font-awesome/js/all.js}"></script>
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/webjars/jquery/dist/jquery.js}"></script>
+<script th:src="@{/js/script.js}"></script>
+
+</body>
+</html>
