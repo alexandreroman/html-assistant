@@ -31,13 +31,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 class ContentController {
     private final Logger logger = LoggerFactory.getLogger(ContentController.class);
-    private final boolean includeHistory;
+    private final boolean reuseContent;
     private final StringRedisTemplate redis;
     private final ChatClient chatClient;
 
-    ContentController(@Value("${app.content.include-history}") boolean includeHistory,
+    ContentController(@Value("${app.content.reuse-content}") boolean reuseContent,
                       ChatClient chatClient, StringRedisTemplate redis) {
-        this.includeHistory = includeHistory;
+        this.reuseContent = reuseContent;
         this.chatClient = chatClient;
         this.redis = redis;
     }
@@ -65,7 +65,7 @@ class ContentController {
             final var content = sanitizeContent(
                     chatClient.prompt()
                             .user(prompt)
-                            .advisors(new ContentAdvisor(contentId, includeHistory, redis))
+                            .advisors(new ContentAdvisor(contentId, reuseContent, redis))
                             .call().content()
             );
 

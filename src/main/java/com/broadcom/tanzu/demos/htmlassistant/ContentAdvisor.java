@@ -20,78 +20,86 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 
-class ContentAdvisor implements StreamAroundAdvisor {
+class ContentAdvisor implements CallAroundAdvisor {
     private final Logger logger = LoggerFactory.getLogger(ContentAdvisor.class);
     private final String contentId;
-    private final boolean includeHistory;
+    private final boolean reuseContent;
     private final StringRedisTemplate redis;
 
-    ContentAdvisor(String contentId, boolean includeHistory, StringRedisTemplate redis) {
+    ContentAdvisor(String contentId, boolean reuseContent, StringRedisTemplate redis) {
         this.contentId = contentId;
-        this.includeHistory = includeHistory;
+        this.reuseContent = reuseContent;
         this.redis = redis;
     }
 
     @Override
-    public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+    public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
         final var currentPrompt = redis.opsForValue().get("content::" + contentId + "::prompt");
         if (!StringUtils.hasText(currentPrompt)) {
             throw new IllegalStateException("No prompt found");
         }
 
         final var previousPrompts = new ArrayList<String>(4);
-        if (includeHistory) {
-            // Collect previous prompts.
-            var i = contentId;
-            do {
-                // Let's see if there's an older content linked to this one.
-                final var previousId = redis.opsForValue().get("content::" + i + "::previous");
-                if (!StringUtils.hasText(previousId)) {
-                    // Found no content.
-                    break;
-                }
+        String lastContent = null;
+        // Collect previous prompts.
+        var i = contentId;
+        do {
+            // Let's see if there's an older content linked to this one.
+            final var previousId = redis.opsForValue().get("content::" + i + "::previous");
+            if (!StringUtils.hasText(previousId)) {
+                // Found no content.
+                break;
+            }
 
-                // Get previous prompt.
-                final var previousPrompt = redis.opsForValue().get("content::" + previousId + "::prompt");
-                if (previousPrompt == null) {
-                    continue;
-                }
+            // Get previous prompt.
+            final var previousPrompt = redis.opsForValue().get("content::" + previousId + "::prompt");
+            if (previousPrompt == null) {
+                continue;
+            }
 
-                previousPrompts.add(previousPrompt);
+            // Get last generated content, if any.
+            if (lastContent == null && reuseContent) {
+                lastContent = redis.opsForValue().get("content::" + previousId + "::source");
+            }
 
-                // Prepare for next round.
-                i = previousId;
-            } while (true);
-        }
+            previousPrompts.add(previousPrompt);
+
+            // Prepare for next round.
+            i = previousId;
+        } while (true);
 
         final var newPrompt = new StringBuilder(4096);
         if (!previousPrompts.isEmpty()) {
-            newPrompt.append("The user previously generated websites using instructions.\n")
-                    .append("There are ").append(previousPrompts.size()).append(" instruction(s).\n")
-                    .append("Please consider these instructions when processing the website:\n");
+            newPrompt.append("The user previously generated a website using instructions.\n")
+                    .append("Please consider these instructions when processing the new website:\n");
             for (final String p : previousPrompts.reversed()) {
                 newPrompt.append("instruction: ").append(p).append("\n");
             }
             newPrompt.append("\n");
         }
 
-        newPrompt.append("Process this instruction to generate a website:\n")
+        newPrompt.append("Process this instruction to generate the new website:\n")
+                .append("instruction: ")
                 .append(currentPrompt).append("\n")
                 .append("\nPlease note that the current year is ").append(LocalDate.now().getYear()).append(" in case you need to generate copyright statements.\n");
+
+        if (lastContent != null) {
+            newPrompt.append("\nUse the following HTML page as a starting point to generate the new website:\n\n")
+                    .append(lastContent).append("\n");
+        }
 
         final var newPromptStr = newPrompt.toString();
         logger.atDebug().log("New augmented prompt:\n{}", newPromptStr);
 
-        return chain.nextAroundStream(AdvisedRequest.from(advisedRequest)
+        return chain.nextAroundCall(AdvisedRequest.from(advisedRequest)
                 .userText(newPromptStr).build());
     }
 
