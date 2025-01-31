@@ -83,7 +83,7 @@ class ContentController {
         if (content == null) {
             throw new IllegalArgumentException("No content generated");
         }
-        // Some AI models (such as DeepSeek) doesn't fully comply with the "output" instructions
+        // Some AI models (such as DeepSeek) don't fully comply with the "output" instructions
         // (such as "just return plain HTML content"): in this case we have to manually clean up
         // the output.
         return content.replaceAll("<think>[\\s\\S]*?</think>", "")
