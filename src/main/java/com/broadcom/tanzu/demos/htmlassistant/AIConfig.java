@@ -16,8 +16,11 @@
 
 package com.broadcom.tanzu.demos.htmlassistant;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,5 +33,13 @@ class AIConfig {
         return chatClientBuilder
                 .defaultSystem(systemPrompt)
                 .build();
+    }
+
+    @Bean
+    CommandLineRunner onStart(ChatModel chatModel) {
+        return args -> {
+            final var logger = LoggerFactory.getLogger(AIConfig.class);
+            logger.atInfo().log("Using chat model: {}", chatModel);
+        };
     }
 }
