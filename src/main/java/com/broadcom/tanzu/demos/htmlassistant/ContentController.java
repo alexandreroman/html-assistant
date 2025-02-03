@@ -16,11 +16,14 @@
 
 package com.broadcom.tanzu.demos.htmlassistant;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,6 +31,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.WebRequest;
+
+import java.time.Duration;
 
 @Controller
 class ContentController {
@@ -46,7 +51,11 @@ class ContentController {
     @GetMapping("/content/site-{id}")
     @ResponseBody
     String generateContent(@PathVariable("id") String contentId,
-                           WebRequest req) {
+                           WebRequest req, HttpServletResponse resp) {
+        // Enable HTTP cache on client side.
+        resp.setHeader(HttpHeaders.CACHE_CONTROL,
+                CacheControl.maxAge(Duration.ofDays(7)).cachePublic().immutable().getHeaderValue());
+
         if (req.checkNotModified(contentId)) {
             // The client already has a "cached" content (ETag header is set): let Spring MVC returns a 304.
             logger.atDebug().log("Using cached content: {}", contentId);
