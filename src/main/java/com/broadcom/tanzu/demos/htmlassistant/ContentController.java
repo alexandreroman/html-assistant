@@ -33,6 +33,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 @Controller
 class ContentController {
@@ -56,7 +59,17 @@ class ContentController {
         resp.setHeader(HttpHeaders.CACHE_CONTROL,
                 CacheControl.maxAge(Duration.ofDays(7)).cachePublic().immutable().getHeaderValue());
 
-        if (req.checkNotModified(contentId)) {
+        final var timestampStr = redis.opsForValue().get("content::" + contentId + "::timestamp");
+        long timestamp = 0;
+        if (timestampStr != null) {
+            try {
+                timestamp = ZonedDateTime.parse(timestampStr).toInstant().toEpochMilli();
+            } catch (DateTimeParseException e) {
+                logger.atWarn().log("Failed to parse timestamp from content {}: {}", contentId, timestampStr, e);
+            }
+        }
+
+        if (timestamp != 0 && req.checkNotModified(contentId, timestamp)) {
             // The client already has a "cached" content (ETag header is set): let Spring MVC returns a 304.
             logger.atDebug().log("Using cached content: {}", contentId);
             return null;
@@ -88,6 +101,10 @@ class ContentController {
             logger.atInfo().log("Content generated with AI: {}", contentId);
             logger.atTrace().log("About to store content {}:\n{}", contentId, content);
             redis.opsForValue().set("content::" + contentId + "::source", content);
+
+            final var now = ZonedDateTime.now();
+            redis.opsForValue().set("content::" + contentId + "::timestamp", now.toString());
+            resp.setHeader(HttpHeaders.LAST_MODIFIED, now.format(DateTimeFormatter.RFC_1123_DATE_TIME));
 
             return content;
         } catch (Exception e) {
