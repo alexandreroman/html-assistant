@@ -22,7 +22,7 @@
   <iframe th:unless="${contentId}" class="w-100 h-100" th:src="@{/starter.html}"></iframe>
 </main>
 
-<footer class="sticky-bottom mx-auto px-3 pb-4 pt-2" style="max-width: 900px">
+<footer class="sticky-bottom mx-auto px-3 pt-2" style="max-width: 900px">
   <div id="prompt-bar" class="bg-white border border-dark-subtle shadow rounded-5 pt-2 px-4">
     <form class="input-group" method="post" th:action="@{'/assistant'}" th:object="${assistantForm}">
       <input type="hidden" th:field="*{previousContentId}"/>
