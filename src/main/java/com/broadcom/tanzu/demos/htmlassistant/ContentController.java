@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.WebRequest;
 
 @Controller
 class ContentController {
@@ -44,10 +45,16 @@ class ContentController {
 
     @GetMapping("/content/site-{id}")
     @ResponseBody
-    String generateContent(@PathVariable("id") String contentId) {
+    String generateContent(@PathVariable("id") String contentId,
+                           WebRequest req) {
+        if (req.checkNotModified(contentId)) {
+            // The client already has a "cached" content (ETag header is set): let Spring MVC returns a 304.
+            logger.atDebug().log("Using cached content: {}", contentId);
+            return null;
+        }
         final var existingContent = redis.opsForValue().get("content::" + contentId + "::source");
         if (existingContent != null) {
-            // We already have the content for this id: just reload as it is.
+            // We already have the content but the ETag header is not set: let's just return the content as it is.
             logger.atDebug().log("Reusing existing content: {}", contentId);
             return existingContent;
         }
