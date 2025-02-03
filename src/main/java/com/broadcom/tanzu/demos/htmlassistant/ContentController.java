@@ -87,8 +87,9 @@ class ContentController {
         // (such as "just return plain HTML content"): in this case we have to manually clean up
         // the output.
         return content.replaceAll("[\\s\\S]*?</think>", "")
-                .replaceAll("```html", "")
-                .replaceAll("```", "").trim();
+                .replaceAll("^```html", "")
+                .replaceAll("```$", "")
+                .trim();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
