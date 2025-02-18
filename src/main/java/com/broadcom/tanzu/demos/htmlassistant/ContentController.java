@@ -84,7 +84,7 @@ class ContentController {
         try {
             final var prompt = redis.opsForValue().get("content::" + contentId + "::prompt");
             if (prompt == null) {
-                throw new IllegalArgumentException("Content not found");
+                throw new IllegalArgumentException("Content not found: " + contentId);
             }
 
             // Call AI model.
@@ -132,6 +132,7 @@ class ContentController {
 
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException e) {
+        logger.atWarn().log("Rendering 404 page", e);
         return ResponseEntity.notFound().build();
     }
 }
