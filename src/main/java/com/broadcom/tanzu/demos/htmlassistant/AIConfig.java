@@ -19,12 +19,16 @@ package com.broadcom.tanzu.demos.htmlassistant;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
+// FIXME workaround for missing metadata in native-image starting with Spring 1.0.0-M6
+@RegisterReflectionForBinding(OpenAiChatOptions.class)
 class AIConfig {
     @Bean
     ChatClient chatClient(ChatClient.Builder chatClientBuilder,
