@@ -16,14 +16,12 @@
 
 package com.broadcom.tanzu.demos.htmlassistant;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@SpringBootApplication
-@EnableConfigurationProperties(ContentConfig.class)
-public class Application {
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
+@ConfigurationProperties(prefix = "app.content")
+record ContentConfig(
+        String model,
+        boolean reuseContent,
+        boolean sanitizeContent
+) {
 }

@@ -31,12 +31,12 @@ import java.util.ArrayList;
 class ContentAdvisor implements CallAroundAdvisor {
     private final Logger logger = LoggerFactory.getLogger(ContentAdvisor.class);
     private final String contentId;
-    private final boolean reuseContent;
+    private final ContentConfig config;
     private final StringRedisTemplate redis;
 
-    ContentAdvisor(String contentId, boolean reuseContent, StringRedisTemplate redis) {
+    ContentAdvisor(String contentId, ContentConfig config, StringRedisTemplate redis) {
         this.contentId = contentId;
-        this.reuseContent = reuseContent;
+        this.config = config;
         this.redis = redis;
     }
 
@@ -66,7 +66,8 @@ class ContentAdvisor implements CallAroundAdvisor {
             }
 
             // Get last generated content, if any.
-            if (lastContent == null && reuseContent) {
+            if (lastContent == null && config.reuseContent()) {
+                logger.atDebug().log("Reusing previous content for {}", contentId);
                 lastContent = redis.opsForValue().get("content::" + previousId + "::source");
             }
 
@@ -97,7 +98,7 @@ class ContentAdvisor implements CallAroundAdvisor {
         }
 
         final var newPromptStr = newPrompt.toString();
-        logger.atDebug().log("New augmented prompt:\n{}", newPromptStr);
+        logger.atDebug().log("New augmented prompt for content {}:\n{}", contentId, newPromptStr);
 
         return chain.nextAroundCall(AdvisedRequest.from(advisedRequest)
                 .userText(newPromptStr).build());

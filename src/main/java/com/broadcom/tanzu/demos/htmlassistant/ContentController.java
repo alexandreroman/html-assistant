@@ -20,7 +20,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
@@ -40,13 +39,13 @@ import java.time.format.DateTimeParseException;
 @Controller
 class ContentController {
     private final Logger logger = LoggerFactory.getLogger(ContentController.class);
-    private final boolean reuseContent;
+    private final ContentConfig config;
     private final StringRedisTemplate redis;
     private final ChatClient chatClient;
 
-    ContentController(@Value("${app.content.reuse-content}") boolean reuseContent,
+    ContentController(ContentConfig config,
                       ChatClient chatClient, StringRedisTemplate redis) {
-        this.reuseContent = reuseContent;
+        this.config = config;
         this.chatClient = chatClient;
         this.redis = redis;
     }
@@ -91,10 +90,10 @@ class ContentController {
             // Call AI model.
             // Note that we do get the output as a plain String, without using a Java entity
             // as some AI models fail to render the output as a JSON construct.
-            final var content = sanitizeContent(
+            final var content = sanitizeContent(contentId,
                     chatClient.prompt()
                             .user(prompt)
-                            .advisors(new ContentAdvisor(contentId, reuseContent, redis))
+                            .advisors(new ContentAdvisor(contentId, config, redis))
                             .call().content()
             );
 
@@ -112,17 +111,23 @@ class ContentController {
         }
     }
 
-    private String sanitizeContent(String content) {
+    private String sanitizeContent(String contentId, String content) {
         if (content == null) {
-            throw new IllegalArgumentException("No content generated");
+            throw new IllegalArgumentException("No content generated: " + contentId);
+        }
+        if (!config.sanitizeContent()) {
+            logger.atDebug().log("Skip content sanitization: {}", contentId);
+            return content;
         }
         // Some AI models (such as DeepSeek) don't fully comply with the "output" instructions
         // (such as "just return plain HTML content"): in this case we have to manually clean up
         // the output.
-        return content.replaceAll("[\\s\\S]*?</think>", "")
+        final var newContent = content.replaceAll("[\\s\\S]*?</think>", "")
                 .replaceAll("^```html", "")
                 .replaceAll("```$", "")
                 .trim();
+        logger.atDebug().log("New content {} after sanitization:\n{}", contentId, newContent);
+        return newContent;
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

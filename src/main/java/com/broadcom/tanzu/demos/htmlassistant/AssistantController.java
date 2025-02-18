@@ -18,7 +18,6 @@ package com.broadcom.tanzu.demos.htmlassistant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -31,15 +30,17 @@ import java.util.UUID;
 @Controller
 class AssistantController {
     private final Logger logger = LoggerFactory.getLogger(AssistantController.class);
+    private final ContentConfig config;
     private final StringRedisTemplate redis;
 
-    AssistantController(StringRedisTemplate redis) {
+    AssistantController(ContentConfig config, StringRedisTemplate redis) {
+        this.config = config;
         this.redis = redis;
     }
 
     @ModelAttribute("model")
-    String getModelName(@Value("${app.content.model}") String model) {
-        return model;
+    String getModelName() {
+        return config.model();
     }
 
     @GetMapping("/assistant")
