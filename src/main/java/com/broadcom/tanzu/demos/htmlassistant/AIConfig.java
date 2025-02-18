@@ -27,8 +27,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 class AIConfig {
     @Bean
-    ChatClient chatClientOpenAI(ChatClient.Builder chatClientBuilder,
-                                @Value("${app.content.prompt}") String systemPrompt) {
+    ChatClient chatClient(ChatClient.Builder chatClientBuilder,
+                          @Value("${app.content.prompt}") String systemPrompt) {
         // Set up a default chat client instance for the app.
         return chatClientBuilder
                 .defaultSystem(systemPrompt)
