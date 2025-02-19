@@ -32,7 +32,7 @@ The AI capabilities are provided through a chat client that can be configured to
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/html-assistant.git
+   git clone https://github.com/alexandreroman/html-assistant.git
    ```
 
 2. Build the project using Maven:
